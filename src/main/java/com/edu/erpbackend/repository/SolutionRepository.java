@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public interface SolutionRepository extends JpaRepository<Solution, UUID> {
     // See all solutions for a specific doubt
-    List<Solution> findByDoubtId(UUID doubtId);
+    List<Solution> findByDoubtIdOrderByCreatedAtAsc(UUID doubtId);
 }

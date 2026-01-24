@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SubmissionRepository extends JpaRepository<Submission, UUID> {
-    // Find all submissions for a specific assignment
+    // For Teachers: See all submissions for a specific homework
     List<Submission> findByAssignmentId(UUID assignmentId);
+
+    // For Students: See their own submissions
+    List<Submission> findByStudentId(UUID studentId);
 }

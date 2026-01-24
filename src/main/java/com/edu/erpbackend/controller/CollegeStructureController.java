@@ -8,6 +8,7 @@ import com.edu.erpbackend.repository.StudentRepository; // Add this
 import com.edu.erpbackend.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,11 +17,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/setup")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('TEACHER')")
 public class CollegeStructureController {
 
     private final BranchRepository branchRepository;
     private final SubjectRepository subjectRepository;
-    private final StudentRepository studentRepository; // Add this
+    private final StudentRepository studentRepository;
 
     // 1. Create a Branch
     @PostMapping("/branches")
@@ -48,5 +50,24 @@ public class CollegeStructureController {
         student.setBranch(branch);
         studentRepository.save(student);
         return ResponseEntity.ok("Student assigned to branch successfully!");
+    }
+
+    @GetMapping("/subjects/branch/{branchId}/semester/{semester}")
+    public ResponseEntity<List<Subject>> getSubjectsBySemester(
+            @PathVariable UUID branchId,
+            @PathVariable Integer semester) {
+        return ResponseEntity.ok(subjectRepository.findByBranchIdAndSemester(branchId, semester));
+    }
+    // 🆕 Feature: Update a Subject's Semester (Moving it from Sem 3 to Sem 4)
+    @PutMapping("/subjects/{subjectId}")
+    public ResponseEntity<?> updateSubjectSemester(
+            @PathVariable UUID subjectId,
+            @RequestParam Integer newSemester) {
+
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new RuntimeException("Subject not found"));
+
+        subject.setSemester(newSemester);
+        return ResponseEntity.ok(subjectRepository.save(subject));
     }
 }

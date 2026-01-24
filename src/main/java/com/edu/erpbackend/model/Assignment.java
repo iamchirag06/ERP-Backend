@@ -2,7 +2,7 @@ package com.edu.erpbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -12,19 +12,22 @@ public class Assignment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id; // Matches 'uuid id PK'
+    private UUID id;
 
-    // Which subject is this for?
-    @ManyToOne
-    @JoinColumn(name = "subject_id", nullable = false)
-    private Subject subject; // Matches 'uuid subject_id FK' (given_in)
+    @Column(nullable = false)
+    private String title;
 
-    private String title; // Matches 'string title' (Not explicitly in diagram but implied)
-
-    // Note: Diagram doesn't explicitly list description/due_date in the box,
-    // but usually you need them. I will add them as per standard ERP needs.
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "due_date")
-    private LocalDate dueDate;
+    @Column(nullable = false)
+    private LocalDateTime deadline;
+
+    @ManyToOne
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
+
+    @ManyToOne
+    @JoinColumn(name = "teacher_id", nullable = false)
+    private Teacher teacher;
 }

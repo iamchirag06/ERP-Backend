@@ -25,4 +25,8 @@ public class Subject {
     @ManyToOne
     @JoinColumn(name = "branch_id", nullable = false)
     private Branch branch;
+
+    // 🆕 ADD THIS: Maps the subject to a specific semester (e.g., 3)
+    @Column(nullable = false)
+    private Integer semester;
 }

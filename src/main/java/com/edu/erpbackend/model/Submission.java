@@ -2,6 +2,8 @@ package com.edu.erpbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -11,19 +13,24 @@ public class Submission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id; // Matches 'uuid id PK'
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)
-    private Assignment assignment; // Matches 'uuid assignment_id FK'
+    private Assignment assignment;
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
-    private Student student; // Matches 'uuid student_id FK'
+    private Student student;
 
-    @Column(name = "file_url")
-    private String fileUrl; // Matches 'string file_url'
+    @Column(columnDefinition = "TEXT")
+    private String submissionLink;
 
-    @Column(name = "marks_obtained")
-    private Float marksObtained; // Matches 'float marks_obtained'
+    private Integer grade;
+
+    @Column(columnDefinition = "TEXT")
+    private String teacherFeedback;
+
+    @CreationTimestamp
+    private LocalDateTime submittedAt;
 }

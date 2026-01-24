@@ -1,8 +1,9 @@
 package com.edu.erpbackend.model;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -12,18 +13,22 @@ public class Solution {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id; // Matches 'uuid id PK'
+    private UUID id;
 
-    // Which doubt is this answering?
     @ManyToOne
     @JoinColumn(name = "doubt_id", nullable = false)
-    private Doubt doubt; // Matches 'uuid doubt_id FK'
+    private Doubt doubt; // ✅ Your existing field
 
-    // Who provided the answer?
     @ManyToOne
     @JoinColumn(name = "solver_id", nullable = false)
-    private Student solver; // Matches 'uuid solver_id FK'
+    private Student solver; // ✅ Your existing field
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content; // 🆕 Added: The actual answer text!
 
     @Column(name = "is_accepted")
-    private Boolean isAccepted = false; // Matches 'boolean is_accepted'
+    private Boolean isAccepted = false; // ✅ Your existing field
+
+    @CreationTimestamp
+    private LocalDateTime createdAt; // 🆕 Added
 }
