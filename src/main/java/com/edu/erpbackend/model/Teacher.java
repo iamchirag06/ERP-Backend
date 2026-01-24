@@ -1,6 +1,5 @@
 package com.edu.erpbackend.model;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -9,12 +8,12 @@ import lombok.EqualsAndHashCode;
 @Table(name = "teachers")
 @Data
 @EqualsAndHashCode(callSuper = true)
-@PrimaryKeyJoinColumn(name = "user_id") // This links 'user_id' FK to the User table
-public class Teacher extends User {
+@PrimaryKeyJoinColumn(name = "user_id")
+public class Teacher extends User { // ✅ Inherits setPasswordHash()
 
     @Column(name = "employee_id", unique = true)
-    private String employeeId; // Matches 'string employee_id'
+    private String employeeId;
 
-    // We will add 'department_id' later
-    // private UUID departmentId;
+    @Column(nullable = false)
+    private String department; // ✅ Fixes 'setDepartment' error
 }

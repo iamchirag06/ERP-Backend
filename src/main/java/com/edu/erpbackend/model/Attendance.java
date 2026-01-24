@@ -31,8 +31,3 @@ public class Attendance {
     private AttendanceStatus status; // Matches 'enum status'
 }
 
-enum AttendanceStatus {
-    PRESENT,
-    ABSENT,
-    LEAVE
-}

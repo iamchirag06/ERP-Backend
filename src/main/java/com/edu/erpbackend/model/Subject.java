@@ -11,13 +11,18 @@ public class Subject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id; // Matches 'uuid id PK'
+    private UUID id;
 
     @Column(nullable = false)
-    private String name; // Matches 'string name' (e.g., "Data Structures")
+    private String name;
 
-    // The Relationship: A Subject belongs to a Branch
+    @Column(nullable = false, unique = true)
+    private String code; // ✅ Added (e.g., "CS-101")
+
+    @Column(nullable = false)
+    private Integer credits; // ✅ Added (e.g., 4)
+
     @ManyToOne
     @JoinColumn(name = "branch_id", nullable = false)
-    private Branch branch; // Matches the link from BRANCHES to SUBJECTS
+    private Branch branch;
 }

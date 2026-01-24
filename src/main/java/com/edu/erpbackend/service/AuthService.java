@@ -11,46 +11,46 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final UserRepository userRepository; // To check if email exists
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
-    private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public User register(RegisterRequest req) {
-        // 1. Check if email exists
-        if (userRepository.findByEmail(req.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already in use");
+    public void register(RegisterRequest request) {
+        // 1. Check if user already exists
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("User with this email already exists");
         }
 
-        // 2. Encrypt Password
-        String encodedPass = passwordEncoder.encode(req.getPassword());
-
-        // 3. Save based on Role
-        if (req.getRole() == Role.STUDENT) {
+        // 2. Handle Logic based on Role
+        if (request.getRole() == Role.STUDENT) {
             Student student = new Student();
-            student.setEmail(req.getEmail());
-            student.setPasswordHash(encodedPass);
+            // User Fields (Inherited)
+            student.setEmail(request.getEmail());
+            student.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             student.setRole(Role.STUDENT);
-            student.setRollNo(req.getRollNo());
-            student.setSemester(req.getSemester());
+            student.setName(request.getName()); // ✅ Set Name
 
-            // Link Branch if provided (Optional logic for now)
-            // Branch branch = branchRepository.findByCode(req.getBranchCode()).orElse(null);
-            // student.setBranch(branch);
+            // Student Specific Fields
+            student.setRollNo(request.getRollNo());
+            student.setSemester(request.getSemester());
+            // Note: Branch needs to be set separately via API or logic if needed right away
 
-            return studentRepository.save(student);
+            studentRepository.save(student);
 
-        } else if (req.getRole() == Role.TEACHER) {
+        } else if (request.getRole() == Role.TEACHER) {
             Teacher teacher = new Teacher();
-            teacher.setEmail(req.getEmail());
-            teacher.setPasswordHash(encodedPass);
+            // User Fields (Inherited)
+            teacher.setEmail(request.getEmail());
+            teacher.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             teacher.setRole(Role.TEACHER);
-            teacher.setEmployeeId(req.getEmployeeId());
+            teacher.setName(request.getName()); // ✅ Set Name
 
-            return teacherRepository.save(teacher);
-        } else {
-            throw new RuntimeException("Invalid Role");
+            // Teacher Specific Fields
+            teacher.setEmployeeId(request.getEmployeeId()); // ✅ Set Employee ID
+            teacher.setDepartment(request.getDepartment()); // ✅ Set Department
+
+            teacherRepository.save(teacher);
         }
     }
 }
