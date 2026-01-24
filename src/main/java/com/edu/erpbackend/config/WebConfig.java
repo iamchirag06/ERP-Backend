@@ -11,6 +11,6 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**") // Apply to all endpoints
                 .allowedOrigins("*") // ✅ ALLOW ALL URLS (React, Mobile, Postman, etc.)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow these actions
-                .allowedHeaders("*"); // Allow all headers (like Authorization)
+                .allowedHeaders("*"); // Allow all headers  (like Authorization)
     }
 }
