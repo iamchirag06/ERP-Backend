@@ -9,8 +9,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // Apply to all endpoints
-                .allowedOrigins("*") // ✅ ALLOW ALL URLS (React, Mobile, Postman, etc.)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow these actions
-                .allowedHeaders("*"); // Allow all headers  (like Authorization)
+                .allowedOriginPatterns("*") // ✅ USE THIS instead of allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH") // ✅ Added PATCH and HEAD
+                .allowedHeaders("*") // Allow all headers
+                .allowCredentials(true); // ✅ Critical for React/Axios frontend communication
     }
 }
