@@ -2,6 +2,11 @@ package com.edu.erpbackend.config;
 
 import com.edu.erpbackend.security.CustomOAuth2UserService;
 import com.edu.erpbackend.security.OAuth2LoginSuccessHandler;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -44,12 +49,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // ✅ Public Endpoints
-                        .requestMatchers("/public/health").permitAll()
+                        .requestMatchers("/","/public/health").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
                         // 🔒 Admin Only
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/scalar/**"
+                        ).permitAll() // Allow Swagger access without login
 
                         // Everything else requires authentication
                         .anyRequest().authenticated()
