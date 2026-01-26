@@ -2,20 +2,21 @@ package com.edu.erpbackend.dto;
 
 import com.edu.erpbackend.model.Role;
 import lombok.Data;
+import java.util.UUID; // Import UUID
 
 @Data
 public class RegisterRequest {
+    private String name;
     private String email;
     private String password;
     private Role role;
-    private String name;
 
-    // ✅ Student Fields
+    // Student specific
     private String rollNo;
     private Integer semester;
-    private String branchCode; // Optional: If you want to link branch by code
+    private UUID branchId; // 👈 Add this line!
 
-    // ✅ Teacher Fields
+    // Teacher specific
     private String employeeId;
     private String department;
 }

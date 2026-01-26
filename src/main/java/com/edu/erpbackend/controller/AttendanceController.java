@@ -5,6 +5,7 @@ import com.edu.erpbackend.model.Attendance;
 import com.edu.erpbackend.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // 👈 Import this
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,8 +18,9 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
-    // Only Teachers should call this
+    // 🔒 SECURE: Only Teachers (and Admin) can mark attendance
     @PostMapping("/mark")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')") // ✅ Restricts this specific action
     public ResponseEntity<?> markAttendance(@RequestBody AttendanceRequest request) {
         try {
             attendanceService.markAttendance(request);
@@ -28,8 +30,10 @@ public class AttendanceController {
         }
     }
 
-    // Students call this to see their own history
+    // 🔓 OPEN: Students need to access this to see their history
+    // We allow Students, Teachers, and Admins to view records
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
     public ResponseEntity<List<Attendance>> getAttendance(@PathVariable UUID studentId) {
         return ResponseEntity.ok(attendanceService.getStudentAttendance(studentId));
     }

@@ -1,5 +1,7 @@
 package com.edu.erpbackend.config;
 
+import com.edu.erpbackend.security.CustomOAuth2UserService;
+import com.edu.erpbackend.security.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +32,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
     @Value("${cors.allowed-origins:*}")
     private String allowedOrigins;
 
@@ -38,15 +43,31 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ NEW: Allow Uptime Robot to access the health check without login
+                        // ✅ Public Endpoints
                         .requestMatchers("/public/health").permitAll()
-
-                        // Existing public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/error").permitAll() // Helps avoid 403 on error pages
+                        .requestMatchers("/error").permitAll()
 
-                        // Everything else requires a token
+                        // 🔒 Admin Only
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
+                ) // 👈 CLOSE authorizeHttpRequests HERE
+
+                // ✅ Logout is a separate chain on 'http', not inside 'auth'
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(200);
+                            response.getWriter().write("Logged out successfully");
+                        })
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2LoginSuccessHandler)
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -54,11 +75,11 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Handle specific origins or allow all
         if (allowedOrigins.equals("*")) {
             configuration.setAllowedOrigins(List.of("*"));
         } else {
@@ -76,11 +97,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-
         authProvider.setPasswordEncoder(passwordEncoder());
-
         return authProvider;
     }
 

@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID> {
     // We need this to find a user when they try to log in
     Optional<User> findByEmail(String email);
+    Optional<User> findByResetToken(String token);
 }
