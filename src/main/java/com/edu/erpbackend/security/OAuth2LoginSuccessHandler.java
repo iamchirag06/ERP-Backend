@@ -27,14 +27,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String email = oauth2User.getAttribute("email");
 
         // 1. Get the User entity
-        // We can safely .get() because CustomOAuth2UserService already checked existence
         User user = userRepository.findByEmail(email).orElseThrow();
 
-        // 2. Generate the JWT Token
-        String token = jwtUtil.generateToken(user.getEmail());
+        // 2. Generate the JWT Token (✅ FIXED: Now passing Role)
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
         // 3. Redirect to Frontend with Token
-        // ⚠️ CHANGE THIS URL if your React/Frontend runs on a different port (e.g., 3000 or 5173)
         String targetUrl = "http://localhost:3000/oauth-callback?token=" + token;
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
