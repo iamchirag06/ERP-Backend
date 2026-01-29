@@ -17,12 +17,13 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // ✅ Change: Inject secret from application.properties
     @Value("${jwt.secret}")
     private String secret;
 
-    public String generateToken(String username) {
+    // ✅ UPDATED: Now accepts 'role' as a parameter
+    public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role); // Add the role to the payload
         return createToken(claims, username);
     }
 
@@ -37,13 +38,17 @@ public class JwtUtil {
     }
 
     private Key getSignKey() {
-        // ✅ Change: Use the injected 'secret' variable
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    // ✅ NEW: Helper method to extract role (optional, for backend use)
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -59,7 +64,6 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // ✅ Kept your signature to prevent errors in your Filter
     public Boolean validateToken(String token, String username) {
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username) && !isTokenExpired(token));
