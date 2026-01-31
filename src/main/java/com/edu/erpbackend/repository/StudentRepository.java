@@ -1,5 +1,6 @@
 package com.edu.erpbackend.repository;
 
+import com.edu.erpbackend.model.Branch;
 import com.edu.erpbackend.model.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -13,4 +14,5 @@ public interface StudentRepository extends JpaRepository<Student, UUID> {
 
     // ✅ ADD THIS: Find all students in a specific branch and semester
     List<Student> findByBranchIdAndSemester(UUID branchId, Integer semester);
+    List<Student> findByBranchAndSemester(Branch branch, Integer semester);
 }
