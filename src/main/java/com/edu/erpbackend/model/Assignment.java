@@ -30,4 +30,6 @@ public class Assignment {
     @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;
+
+    private String attachmentUrl;
 }

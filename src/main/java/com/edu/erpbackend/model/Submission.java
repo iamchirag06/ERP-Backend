@@ -31,6 +31,9 @@ public class Submission {
     @Column(columnDefinition = "TEXT")
     private String teacherFeedback;
 
+    @Column(nullable = false)
+    private boolean isLate;
+
     @CreationTimestamp
     private LocalDateTime submittedAt;
 }

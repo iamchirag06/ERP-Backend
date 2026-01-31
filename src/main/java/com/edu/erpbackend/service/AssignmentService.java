@@ -7,7 +7,10 @@ import com.edu.erpbackend.model.*;
 import com.edu.erpbackend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.edu.erpbackend.dto.SubmissionResponse;
+import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +25,8 @@ public class AssignmentService {
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
 
-    // 1. Create Assignment (Teacher Only)
-    public void createAssignment(String email, AssignmentRequest request) {
-        // Find the Teacher who is logged in
+    // 1. Create Assignment (✅ Fixed: Added 'String attachmentUrl' parameter)
+    public Assignment createAssignment(String email, AssignmentRequest request, String attachmentUrl) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -41,11 +43,13 @@ public class AssignmentService {
         assignment.setSubject(subject);
         assignment.setTeacher(teacher);
 
-        assignmentRepository.save(assignment);
+        // ✅ Now this works because we passed it in the method arguments
+        assignment.setAttachmentUrl(attachmentUrl);
+
+        return assignmentRepository.save(assignment);
     }
 
-    // 2. Submit Assignment (Student Only)
-    public void submitAssignment(String email, SubmissionRequest request) {
+    public void submitAssignment(String email, SubmissionRequest request, String fileUrl) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -55,34 +59,45 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(request.getAssignmentId())
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
 
-        // Check if already submitted? (Optional logic)
-
         Submission submission = new Submission();
         submission.setAssignment(assignment);
         submission.setStudent(student);
-        submission.setSubmissionLink(request.getSubmissionLink());
+
+        // If they sent a file, use it. If they sent a link (e.g. GitHub), use that.
+        submission.setSubmissionLink(fileUrl != null ? fileUrl : request.getSubmissionLink());
+
+        if (assignment.getDeadline() != null && LocalDateTime.now().isAfter(assignment.getDeadline())) {
+            submission.setLate(true);
+        } else {
+            submission.setLate(false);
+        }
 
         submissionRepository.save(submission);
     }
 
-    // 3. Grade Submission (Teacher Only)
-    public void gradeSubmission(GradeRequest request) {
-        Submission submission = submissionRepository.findById(request.getSubmissionId())
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
-
+    public Submission gradeSubmission(GradeRequest request) {
+        Submission submission = submissionRepository.findById(request.getSubmissionId()).orElseThrow();
         submission.setGrade(request.getGrade());
         submission.setTeacherFeedback(request.getFeedback());
-
-        submissionRepository.save(submission);
+        return submissionRepository.save(submission);
     }
 
-    // 4. Get Assignments for a Subject
     public List<Assignment> getAssignmentsBySubject(UUID subjectId) {
         return assignmentRepository.findBySubjectId(subjectId);
     }
 
-    // 5. Get Submissions for an Assignment (For Teacher View)
-    public List<Submission> getSubmissionsForAssignment(UUID assignmentId) {
-        return submissionRepository.findByAssignmentId(assignmentId);
+    public List<SubmissionResponse> getSubmissionsForAssignment(UUID assignmentId) {
+        List<Submission> submissions = submissionRepository.findByAssignmentId(assignmentId);
+
+        return submissions.stream().map(sub -> new SubmissionResponse(
+                sub.getId(),
+                sub.getStudent().getName(), // ✅ Fix 1: Removed .getUser() (Student IS A User)
+                sub.getStudent().getRollNo(),
+                sub.getSubmissionLink(),
+                sub.getGrade() != null ? sub.getGrade().toString() : "Not Graded",
+                sub.getTeacherFeedback(),
+                sub.isLate(),
+                sub.getSubmittedAt()
+        )).collect(Collectors.toList());
     }
 }
