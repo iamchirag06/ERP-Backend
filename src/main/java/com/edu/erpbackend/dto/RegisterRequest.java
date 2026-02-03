@@ -19,4 +19,6 @@ public class RegisterRequest {
     // Teacher specific
     private String employeeId;
     private String department;
+
+    private String batch;
 }

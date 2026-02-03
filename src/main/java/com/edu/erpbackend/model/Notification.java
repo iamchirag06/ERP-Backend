@@ -36,8 +36,11 @@ public class Notification {
 
     private boolean isRead = false;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Builder.Default
+    private String targetGroup = "ALL";
 
     private String attachmentUrl;
 }

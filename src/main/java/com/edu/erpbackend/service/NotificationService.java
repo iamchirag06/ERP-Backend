@@ -74,6 +74,30 @@ public class NotificationService {
         return batchId;
     }
 
+    public UUID sendToBatch(String batch, String title, String message, String attachmentUrl) {
+        // 1. Find all students in this batch (2023-2027)
+        List<Student> students = studentRepository.findByBatch(batch);
+
+        if (students.isEmpty()) return null;
+        UUID batchId = UUID.randomUUID(); // Unique ID for this "blast"
+
+        // 2. Create a notification for each student
+        List<Notification> notifications = students.stream()
+                .map(student -> Notification.builder()
+                        .recipient(student) // Link to User
+                        .title(title)
+                        .message(message)
+                        .type(NotificationType.NOTICE)
+                        .batchId(batchId)
+                        .attachmentUrl(attachmentUrl)
+                        .isRead(false)
+                        .build())
+                .toList();
+
+        notificationRepository.saveAll(notifications);
+        return batchId;
+    }
+
     public List<Notification> getMyNotifications(UUID userId) {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId);
     }

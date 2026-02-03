@@ -3,8 +3,10 @@ package com.edu.erpbackend.controller;
 import com.edu.erpbackend.dto.BranchRequest;
 import com.edu.erpbackend.dto.RegisterRequest;
 import com.edu.erpbackend.model.Branch;
+import com.edu.erpbackend.model.Student;
 import com.edu.erpbackend.repository.BranchRepository;
 import com.edu.erpbackend.model.Role;
+import com.edu.erpbackend.repository.StudentRepository;
 import com.edu.erpbackend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import com.edu.erpbackend.model.Subject;
 import com.edu.erpbackend.repository.SubjectRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -23,6 +26,7 @@ public class AdminController {
     private final AuthService authService;
     private final BranchRepository branchRepository;
     private final SubjectRepository subjectRepository;
+    private final StudentRepository studentRepository;
 
     // 🔒 Admin Only: Create Teacher
     @PostMapping("/add-teacher")
@@ -42,8 +46,12 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> addStudent(@RequestBody RegisterRequest request) {
         request.setRole(Role.STUDENT); // Force Role
+
+        if (request.getBatch() == null || request.getBatch().isEmpty()) {
+            return ResponseEntity.badRequest().body("Batch is required (e.g., '2023-2027')");
+        }
         try {
-            authService.register(request);
+            authService.register(request); // This now carries the batch info
             return ResponseEntity.ok("Student added successfully!");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -87,5 +95,28 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Subject>> getSubjects(@PathVariable java.util.UUID branchId, @PathVariable Integer semester) {
         return ResponseEntity.ok(subjectRepository.findByBranchIdAndSemester(branchId, semester));
+    }
+
+    @PostMapping("/promote-batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> promoteBatch(@RequestBody Map<String, Object> body) {
+        String batch = (String) body.get("batch");
+
+        if (batch == null) return ResponseEntity.badRequest().body("Batch is required");
+
+        // ✅ FIX 1: Use 'studentRepository' (lowercase) to find students
+        List<Student> students = studentRepository.findByBatch(batch);
+
+        if (students.isEmpty()) return ResponseEntity.badRequest().body("No students found in batch " + batch);
+
+        // Logic: Increment Semester
+        for (Student s : students) {
+            s.setSemester(s.getSemester() + 1);
+        }
+
+        // ✅ FIX 2: Use 'studentRepository' (lowercase) to save
+        studentRepository.saveAll(students);
+
+        return ResponseEntity.ok("Promoted " + students.size() + " students in batch " + batch);
     }
 }

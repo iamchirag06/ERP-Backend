@@ -51,23 +51,29 @@ public class NotificationController {
     @PostMapping(value = "/send", consumes = {"multipart/form-data"})
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<?> sendNotice(
-//            @RequestPart("data") String dataJson, // 👈 KEY CHANGE: Accept String
-            @RequestPart("data") NoticeRequest request,
+            @RequestPart("data") NoticeRequest request, // Ensure DTO has 'batch' field
             @RequestPart(value = "file", required = false) MultipartFile file
     ) throws IOException {
 
-        // 1. Manually convert String to NoticeRequest
-//        NoticeRequest request = objectMapper.readValue(dataJson, NoticeRequest.class);
+        // 1. Upload File (Reusable Logic)
+        String attachmentUrl = fileService.saveFile(file, "Notices");
+        UUID notificationReferenceId; // Returns the ID of the created notice
 
-        // 2. Upload File
-        String attachmentUrl = fileService.saveFile(file,"Notices");
-        UUID batchId;
-
-        if (request.getBranchId() != null && request.getSemester() != null) {
+        // 2. Logic to determine recipients
+        if (request.getBatch() != null && !request.getBatch().isEmpty()) {
+            // ✅ CASE 1: Send to a specific Batch (e.g., "2023-2027")
+            notificationReferenceId = notificationService.sendToBatch(
+                    request.getBatch(),
+                    request.getTitle(),
+                    request.getMessage(),
+                    attachmentUrl
+            );
+        } else if (request.getBranchId() != null && request.getSemester() != null) {
+            // ✅ CASE 2: Send to a specific Class (Branch + Semester)
             Branch branch = branchRepository.findById(request.getBranchId())
                     .orElseThrow(() -> new RuntimeException("Branch not found"));
 
-            batchId = notificationService.sendToGroup(
+            notificationReferenceId = notificationService.sendToGroup(
                     branch,
                     request.getSemester(),
                     request.getTitle(),
@@ -77,16 +83,16 @@ public class NotificationController {
                     attachmentUrl
             );
         } else {
-            batchId = notificationService.sendToAll(
+            // ✅ CASE 3: Send to Everyone (Default)
+            notificationReferenceId = notificationService.sendToAll(
                     request.getTitle(),
                     request.getMessage(),
                     attachmentUrl
             );
         }
-
         return ResponseEntity.ok(Map.of(
                 "message", "Notice sent successfully!",
-                "batchId", batchId
+                "id", notificationReferenceId
         ));
     }
 

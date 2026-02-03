@@ -20,9 +20,10 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
+@RequiredArgsConstructor // ✅ This handles Injection (No @Autowired needed on fields)
 public class UserController {
 
+    // ✅ Define Final fields (Lowercase names)
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final StudentRepository studentRepository;
@@ -31,23 +32,33 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Not Authenticated");
+        }
         String email = authentication.getName();
         Optional<User> user = userRepository.findByEmail(email);
 
-        if (user.isPresent()) {
-            return ResponseEntity.ok(user.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return user.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/students")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<List<Student>> getStudents(
             @RequestParam(required = false) UUID branchId,
-            @RequestParam(required = false) Integer semester
+            @RequestParam(required = false) Integer semester,
+            @RequestParam(required = false) String batch // ✅ NEW PARAM
     ) {
-        if (branchId != null && semester != null) {
+        if (batch != null && branchId != null) {
+            // Case 1: Specific Branch + Batch (e.g., CSE 2023-27)
+            return ResponseEntity.ok(studentRepository.findByBatchAndBranchId(batch, branchId));
+
+        } else if (batch != null) {
+            // Case 2: Entire Batch (e.g., All 2023-27 students across college)
+            return ResponseEntity.ok(studentRepository.findByBatch(batch));
+
+        } else if (branchId != null && semester != null) {
+            // Case 3: Old Logic (Branch + Sem)
             return ResponseEntity.ok(studentRepository.findByBranchIdAndSemester(branchId, semester));
         } else {
             return ResponseEntity.ok(studentRepository.findAll());
