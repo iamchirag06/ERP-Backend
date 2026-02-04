@@ -7,6 +7,7 @@ import com.edu.erpbackend.dto.SubmissionResponse;
 import com.edu.erpbackend.model.Assignment;
 import com.edu.erpbackend.model.NotificationType;
 import com.edu.erpbackend.model.Submission;
+import com.edu.erpbackend.repository.SubmissionRepository;
 import com.edu.erpbackend.service.AssignmentService;
 import com.edu.erpbackend.service.FileService;
 import com.edu.erpbackend.service.NotificationService;
@@ -30,6 +31,7 @@ public class AssignmentController {
 
     private final AssignmentService assignmentService;
     private final NotificationService notificationService;
+    private final SubmissionRepository submissionRepository;
     private final FileService fileService;
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
@@ -118,5 +120,29 @@ public class AssignmentController {
     @GetMapping("/subject/{subjectId}")
     public ResponseEntity<List<Assignment>> getAssignments(@PathVariable UUID subjectId) {
         return ResponseEntity.ok(assignmentService.getAssignmentsBySubject(subjectId));
+    }
+
+    // POST /api/assignments/grade/{submissionId}
+    @PostMapping("/grade/{submissionId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<?> gradeSubmission(
+            @PathVariable UUID submissionId,
+            @RequestParam("grade") String grade, // e.g., "A", "85/100"
+            @RequestParam(value = "feedback", required = false) String feedback
+    ) {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        try {
+            submission.setGrade(Integer.parseInt(grade));
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body("Grade must be a number");
+        }
+        submission.setTeacherFeedback(feedback);
+
+        submissionRepository.save(submission);
+
+        // Optional: Send notification to student ("Your assignment has been graded")
+        return ResponseEntity.ok("Graded successfully");
     }
 }

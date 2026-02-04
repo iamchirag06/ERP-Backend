@@ -8,6 +8,8 @@ import com.edu.erpbackend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.edu.erpbackend.dto.SubmissionResponse;
+
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
@@ -50,6 +52,7 @@ public class AssignmentService {
     }
 
     public void submitAssignment(String email, SubmissionRequest request, String fileUrl) {
+        // 1. Fetch User & Student (Your existing logic)
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -59,19 +62,43 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(request.getAssignmentId())
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
 
-        Submission submission = new Submission();
-        submission.setAssignment(assignment);
-        submission.setStudent(student);
+        // 2. Check if this student already submitted (THE NEW LOGIC)
+        Optional<Submission> existing = submissionRepository.findByAssignmentIdAndStudentId(
+                assignment.getId(),
+                student.getId()
+        );
 
-        // If they sent a file, use it. If they sent a link (e.g. GitHub), use that.
+        Submission submission;
+
+        if (existing.isPresent()) {
+            // 🔄 CASE A: Update Existing Submission (Overwrite)
+            submission = existing.get();
+
+            // Optional: If they resubmit, you might want to reset the grade?
+             submission.setGrade(null);
+             submission.setTeacherFeedback(null);
+        } else {
+            // 🆕 CASE B: Create New Submission
+            submission = new Submission();
+            submission.setAssignment(assignment);
+            submission.setStudent(student);
+        }
+
+        // 3. Common Updates (Apply to both New and Old)
+        // If they sent a file, use it. If they sent a link, use that.
         submission.setSubmissionLink(fileUrl != null ? fileUrl : request.getSubmissionLink());
 
+        // Update the timestamp to NOW
+        submission.setSubmittedAt(LocalDateTime.now());
+
+        // 4. Check for Late Submission (Your existing logic)
         if (assignment.getDeadline() != null && LocalDateTime.now().isAfter(assignment.getDeadline())) {
             submission.setLate(true);
         } else {
             submission.setLate(false);
         }
 
+        // 5. Save
         submissionRepository.save(submission);
     }
 

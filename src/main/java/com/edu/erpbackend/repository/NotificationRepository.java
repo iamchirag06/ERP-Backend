@@ -11,4 +11,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     // Delete by Batch ID
     void deleteByBatchId(UUID batchId);
+
+    long countByRecipientIdAndIsReadFalse(UUID recipientId);
 }

@@ -17,6 +17,7 @@ import com.edu.erpbackend.repository.SubjectRepository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -104,7 +105,6 @@ public class AdminController {
 
         if (batch == null) return ResponseEntity.badRequest().body("Batch is required");
 
-        // ✅ FIX 1: Use 'studentRepository' (lowercase) to find students
         List<Student> students = studentRepository.findByBatch(batch);
 
         if (students.isEmpty()) return ResponseEntity.badRequest().body("No students found in batch " + batch);
@@ -113,10 +113,27 @@ public class AdminController {
         for (Student s : students) {
             s.setSemester(s.getSemester() + 1);
         }
-
-        // ✅ FIX 2: Use 'studentRepository' (lowercase) to save
         studentRepository.saveAll(students);
 
         return ResponseEntity.ok("Promoted " + students.size() + " students in batch " + batch);
+    }
+
+    // PUT /api/admin/student/{id}
+    @PutMapping("/student/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateStudent(@PathVariable UUID id, @RequestBody Map<String, Object> updates) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // Update fields if provided in the JSON body
+        if (updates.containsKey("name")) student.setName((String) updates.get("name"));
+        // Note: Changing email might require checking for duplicates in a real app
+        if (updates.containsKey("email")) student.setEmail((String) updates.get("email"));
+        if (updates.containsKey("rollNo")) student.setRollNo((String) updates.get("rollNo"));
+        if (updates.containsKey("semester")) student.setSemester((Integer) updates.get("semester"));
+        if (updates.containsKey("batch")) student.setBatch((String) updates.get("batch"));
+
+        studentRepository.save(student);
+        return ResponseEntity.ok("Student details updated successfully");
     }
 }
