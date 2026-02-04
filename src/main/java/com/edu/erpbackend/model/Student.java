@@ -26,4 +26,7 @@ public class Student extends User { // ✅ Inherits setPasswordHash()
 
     @Column(name = "admission_date")
     private LocalDate admissionDate; // ✅ Fixes 'setAdmissionDate' error
+
+    @Column(name = "batch")
+    private String batch;
 }

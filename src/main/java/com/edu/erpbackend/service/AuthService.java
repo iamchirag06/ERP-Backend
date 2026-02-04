@@ -23,7 +23,6 @@ public class AuthService {
     private final EmailService emailService;
     private final BranchRepository branchRepository;
 
-    // ✅ NEW: Needed for Login
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
 
@@ -56,13 +55,20 @@ public class AuthService {
         // 2. Handle Logic based on Role
         if (request.getRole() == Role.STUDENT) {
             Student student = new Student();
+
+            // --- User Fields ---
             student.setEmail(request.getEmail());
             student.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             student.setRole(Role.STUDENT);
             student.setName(request.getName());
 
+            // --- Student Specific Fields ---
             student.setRollNo(request.getRollNo());
             student.setSemester(request.getSemester());
+
+            // ✅ NEW: Set the Batch (e.g., "2023-2027")
+            // Ensure your database has this column!
+            student.setBatch(request.getBatch());
 
             if (request.getBranchId() != null) {
                 Branch branch = branchRepository.findById(request.getBranchId())
