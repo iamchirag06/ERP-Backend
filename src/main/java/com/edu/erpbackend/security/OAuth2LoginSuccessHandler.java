@@ -1,7 +1,7 @@
 package com.edu.erpbackend.security;
 
-import com.edu.erpbackend.model.User;
-import com.edu.erpbackend.repository.UserRepository;
+import com.edu.erpbackend.model.users.User;
+import com.edu.erpbackend.repository.users.UserRepository;
 import com.edu.erpbackend.util.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

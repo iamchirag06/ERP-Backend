@@ -1,6 +1,6 @@
 package com.edu.erpbackend.config;
 
-import com.edu.erpbackend.service.CustomUserDetailsService;
+import com.edu.erpbackend.service.auth.CustomUserDetailsService;
 import com.edu.erpbackend.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

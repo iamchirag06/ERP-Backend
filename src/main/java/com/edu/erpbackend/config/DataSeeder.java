@@ -1,8 +1,8 @@
 package com.edu.erpbackend.config;
 
-import com.edu.erpbackend.model.Role;
-import com.edu.erpbackend.model.User;
-import com.edu.erpbackend.repository.UserRepository;
+import com.edu.erpbackend.model.users.Role;
+import com.edu.erpbackend.model.users.User;
+import com.edu.erpbackend.repository.users.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
