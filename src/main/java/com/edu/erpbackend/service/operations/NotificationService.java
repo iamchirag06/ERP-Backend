@@ -119,4 +119,20 @@ public class NotificationService {
     public void withdrawNotification(UUID batchId) {
         notificationRepository.deleteByBatchId(batchId);
     }
+    // ✅ NEW: Unread count
+    public long getUnreadCount(UUID userId) {
+        return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
+    }
+
+    // ✅ NEW: Mark all notifications as read
+    @Transactional
+    public void markAllAsRead(UUID userId) {
+        List<Notification> unread = notificationRepository
+                .findByRecipientIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .filter(n -> !n.isRead())
+                .toList();
+        unread.forEach(n -> n.setRead(true));
+        notificationRepository.saveAll(unread);
+    }
 }

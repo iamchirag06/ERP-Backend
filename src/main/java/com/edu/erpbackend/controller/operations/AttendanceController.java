@@ -55,4 +55,12 @@ public class AttendanceController {
         attendanceRepository.save(attendance);
         return ResponseEntity.ok("Attendance corrected successfully");
     }
+    // ✅ NEW: Attendance Summary with % per subject
+    @GetMapping("/summary/{studentId}")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
+    public ResponseEntity<List<com.edu.erpbackend.dto.AttendanceSummaryResponse>> getSummary(
+            @PathVariable UUID studentId) {
+        return ResponseEntity.ok(attendanceService.getAttendanceSummary(studentId));
+    }
+
 }
