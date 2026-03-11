@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -16,33 +15,34 @@ public class FileService {
 
     private final Cloudinary cloudinary;
 
-    public String saveFile(MultipartFile file, String folderName) throws IOException {
-        if (file == null || file.isEmpty()) return null;
-
-        String originalFilename = file.getOriginalFilename();
-        String contentType = file.getContentType();
-        String publicId = UUID.randomUUID().toString();
-
-        String resourceType = "auto";
-
-        // Detect Documents (PDF, DOCX, ZIP) and switch to "raw"
-        if (contentType != null && !contentType.startsWith("image/") && !contentType.startsWith("video/")) {
-            resourceType = "raw";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                publicId += originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+    // 1. Upload Method (Existing)
+    public String saveFile(MultipartFile file, String folderName) {
+        try {
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap("folder", folderName));
+            return (String) uploadResult.get("url");
+        } catch (IOException e) {
+            throw new RuntimeException("Image upload failed");
         }
+    }
 
-        byte[] fileBytes = file.getBytes();
-        if (fileBytes.length == 0) throw new IOException("File is empty!");
+    // 2. Delete Method (New) 🗑️
+    public void deleteFile(String imageUrl) {
+        try {
+            String publicId = extractPublicId(imageUrl);
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        } catch (Exception e) {
+            // Log error but don't stop the process (it's okay if delete fails)
+            System.err.println("Failed to delete old image: " + e.getMessage());
+        }
+    }
 
-        // Upload to Cloudinary with Folder
-        Map uploadResult = cloudinary.uploader().upload(fileBytes, ObjectUtils.asMap(
-                "public_id", publicId,
-                "resource_type", resourceType,
-                "folder", folderName
-        ));
-
-        return uploadResult.get("secure_url").toString();
+    private String extractPublicId(String imageUrl) {
+        // Simple logic: split by "/" and remove extension
+        String[] parts = imageUrl.split("/");
+        String filenameWithExt = parts[parts.length - 1]; // "image.jpg"
+        String filename = filenameWithExt.split("\\.")[0]; // "image"
+        String folder = parts[parts.length - 2]; // "profiles"
+        return folder + "/" + filename;
     }
 }

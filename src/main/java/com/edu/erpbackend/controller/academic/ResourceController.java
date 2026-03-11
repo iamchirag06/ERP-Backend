@@ -74,4 +74,14 @@ public class ResourceController {
     public ResponseEntity<List<StudyMaterial>> getNotes(@PathVariable UUID subjectId) {
         return ResponseEntity.ok(studyMaterialRepository.findBySubjectIdOrderByUploadedAtDesc(subjectId));
     }
+    // ✅ NEW: Delete a study material (Teacher only)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<?> deleteMaterial(@PathVariable UUID id) {
+        if (!studyMaterialRepository.existsById(id)) {
+            return ResponseEntity.badRequest().body("Study material not found");
+        }
+        studyMaterialRepository.deleteById(id);
+        return ResponseEntity.ok("Study material deleted successfully");
+    }
 }

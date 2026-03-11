@@ -137,4 +137,41 @@ public class AssignmentService {
                 sub.getSubmittedAt()
         )).collect(Collectors.toList());
     }
+    // ✅ NEW: Get single assignment by ID
+    public Assignment getAssignmentById(UUID id) {
+        return assignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+    }
+
+    // ✅ NEW: Save (used for update)
+    public Assignment saveAssignment(Assignment assignment) {
+        return assignmentRepository.save(assignment);
+    }
+
+    // ✅ NEW: Delete assignment
+    public void deleteAssignment(UUID id) {
+        if (!assignmentRepository.existsById(id)) {
+            throw new RuntimeException("Assignment not found");
+        }
+        assignmentRepository.deleteById(id);
+    }
+
+    // ✅ NEW: Get student's own submissions
+    public List<SubmissionResponse> getMySubmissions(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Submission> submissions = submissionRepository.findByStudentId(user.getId());
+
+        return submissions.stream().map(sub -> new SubmissionResponse(
+                sub.getId(),
+                sub.getStudent().getName(),
+                sub.getStudent().getRollNo(),
+                sub.getSubmissionLink(),
+                sub.getGrade() != null ? sub.getGrade().toString() : "Not Graded",
+                sub.getTeacherFeedback(),
+                sub.isLate(),
+                sub.getSubmittedAt()
+        )).collect(Collectors.toList());
+    }
 }

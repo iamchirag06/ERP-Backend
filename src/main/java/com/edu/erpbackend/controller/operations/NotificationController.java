@@ -106,4 +106,21 @@ public class NotificationController {
         notificationService.withdrawNotification(batchId);
         return ResponseEntity.ok("Notice withdrawn from all students.");
     }
+    // ✅ NEW: Get unread notification count (for frontend bell badge 🔔)
+    @GetMapping("/unread-count")
+    public ResponseEntity<?> getUnreadCount() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        long count = notificationService.getUnreadCount(user.getId());
+        return ResponseEntity.ok(Map.of("unreadCount", count));
+    }
+
+    // ✅ NEW: Mark ALL notifications as read at once
+    @PutMapping("/read-all")
+    public ResponseEntity<?> markAllRead() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        notificationService.markAllAsRead(user.getId());
+        return ResponseEntity.ok("All notifications marked as read");
+    }
 }

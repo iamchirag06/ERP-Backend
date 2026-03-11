@@ -1,15 +1,14 @@
 package com.edu.erpbackend.controller.users;
 
 import com.edu.erpbackend.dto.TeacherProfileResponse;
-import com.edu.erpbackend.model.users.Teacher;
-import com.edu.erpbackend.model.users.User;
-import com.edu.erpbackend.repository.users.TeacherRepository;
-import com.edu.erpbackend.repository.users.UserRepository;
+import com.edu.erpbackend.dto.TeacherProfileUpdateRequest;
+import com.edu.erpbackend.service.users.TeacherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -18,64 +17,35 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TeacherController {
 
-    private final TeacherRepository teacherRepository;
-    private final UserRepository userRepository;
+    private final TeacherService teacherService;
 
-    // ==========================================
-    // 1. GET MY PROFILE
-    // ==========================================
+    // 1. GET PROFILE
     @GetMapping
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<TeacherProfileResponse> getMyProfile() {
-        // 1. Identify User
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
-
-        // 2. Fetch Teacher Details
-        Teacher teacher = teacherRepository.findById(user.getId())
-                .orElseThrow(() -> new RuntimeException("Teacher profile not found"));
-
-        // 3. Map to DTO
-        return ResponseEntity.ok(TeacherProfileResponse.builder()
-                .name(teacher.getName())
-                .email(teacher.getEmail())
-                .profileImageUrl(teacher.getProfileImageUrl())
-                .designation(teacher.getDesignation() != null ? teacher.getDesignation().toString() : "N/A")
-                .qualification(teacher.getQualification())
-                .branchName(teacher.getBranch() != null ? teacher.getBranch().getName() : "General")
-                .joiningDate(teacher.getJoiningDate())
-                .phoneNumber(teacher.getPhoneNumber())
-                .cabinNumber(teacher.getCabinNumber())
-                .build());
+        return ResponseEntity.ok(teacherService.getMyProfile(email));
     }
 
-    // ==========================================
-    // 2. UPDATE PROFILE
-    // ==========================================
+    // 2. UPDATE PROFILE (Text)
     @PutMapping
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<?> updateProfile(@RequestBody Map<String, Object> updates) {
+    public ResponseEntity<?> updateProfile(@RequestBody TeacherProfileUpdateRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
-        Teacher teacher = teacherRepository.findById(user.getId()).orElseThrow();
-
-        // ✅ Allow editing ONLY these fields
-        if (updates.containsKey("phoneNumber")) {
-            teacher.setPhoneNumber((String) updates.get("phoneNumber"));
-        }
-        if (updates.containsKey("cabinNumber")) {
-            teacher.setCabinNumber((String) updates.get("cabinNumber"));
-        }
-        if (updates.containsKey("qualification")) {
-            teacher.setQualification((String) updates.get("qualification"));
-        }
-        if (updates.containsKey("profileImageUrl")) {
-            teacher.setProfileImageUrl((String) updates.get("profileImageUrl"));
-        }
-
-        // ❌ Block editing of Designation, Joining Date, Branch (Admin only)
-
-        teacherRepository.save(teacher);
+        teacherService.updateProfile(email, request);
         return ResponseEntity.ok("Teacher profile updated successfully");
+    }
+
+    // 3. UPLOAD IMAGE
+    @PostMapping("/image")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            String newImageUrl = teacherService.uploadProfileImage(email, file);
+            return ResponseEntity.ok(Map.of("imageUrl", newImageUrl));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

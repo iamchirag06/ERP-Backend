@@ -122,27 +122,35 @@ public class AssignmentController {
         return ResponseEntity.ok(assignmentService.getAssignmentsBySubject(subjectId));
     }
 
-    // POST /api/assignments/grade/{submissionId}
-    @PostMapping("/grade/{submissionId}")
+    // ✅ NEW: Edit an assignment (Teacher only)
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<?> gradeSubmission(
-            @PathVariable UUID submissionId,
-            @RequestParam("grade") String grade, // e.g., "A", "85/100"
-            @RequestParam(value = "feedback", required = false) String feedback
-    ) {
-        Submission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+    public ResponseEntity<?> updateAssignment(
+            @PathVariable UUID id,
+            @RequestBody AssignmentRequest request) {
 
-        try {
-            submission.setGrade(Integer.parseInt(grade));
-        } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body("Grade must be a number");
-        }
-        submission.setTeacherFeedback(feedback);
+        Assignment assignment = assignmentService.getAssignmentById(id);
 
-        submissionRepository.save(submission);
+        if (request.getTitle() != null) assignment.setTitle(request.getTitle());
+        if (request.getDescription() != null) assignment.setDescription(request.getDescription());
+        if (request.getDeadline() != null) assignment.setDeadline(request.getDeadline());
 
-        // Optional: Send notification to student ("Your assignment has been graded")
-        return ResponseEntity.ok("Graded successfully");
+        // Re-save via service
+        return ResponseEntity.ok(assignmentService.saveAssignment(assignment));
+    }
+
+    // ✅ NEW: Delete an assignment (Teacher only)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<?> deleteAssignment(@PathVariable UUID id) {
+        assignmentService.deleteAssignment(id);
+        return ResponseEntity.ok("Assignment deleted successfully");
+    }
+
+    // ✅ NEW: Student can view their own submissions
+    @GetMapping("/my-submissions")
+    public ResponseEntity<List<SubmissionResponse>> getMySubmissions() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(assignmentService.getMySubmissions(email));
     }
 }

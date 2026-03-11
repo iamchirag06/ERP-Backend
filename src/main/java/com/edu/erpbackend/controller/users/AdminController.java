@@ -7,6 +7,7 @@ import com.edu.erpbackend.model.users.Student;
 import com.edu.erpbackend.repository.academic.BranchRepository;
 import com.edu.erpbackend.model.users.Role;
 import com.edu.erpbackend.repository.users.StudentRepository;
+import com.edu.erpbackend.repository.users.TeacherRepository;
 import com.edu.erpbackend.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ public class AdminController {
     private final BranchRepository branchRepository;
     private final SubjectRepository subjectRepository;
     private final StudentRepository studentRepository;
+    private final TeacherRepository teacherRepository;
 
     // 🔒 Admin Only: Create Teacher
     @PostMapping("/add-teacher")
@@ -146,5 +148,64 @@ public class AdminController {
 
         studentRepository.save(student);
         return ResponseEntity.ok("Student details updated successfully");
+    }
+    // ✅ NEW: List all students (with optional filters)
+    @GetMapping("/students")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Student>> getAllStudents(
+            @RequestParam(required = false) UUID branchId,
+            @RequestParam(required = false) Integer semester,
+            @RequestParam(required = false) String batch) {
+
+        List<Student> students;
+
+        if (branchId != null && semester != null) {
+            students = studentRepository.findByBranchIdAndSemester(branchId, semester);
+        } else if (batch != null && !batch.isEmpty()) {
+            students = studentRepository.findByBatch(batch);
+        } else {
+            students = studentRepository.findAll();
+        }
+
+        return ResponseEntity.ok(students);
+    }
+
+    // ✅ NEW: List all teachers (with optional department filter)
+    @GetMapping("/teachers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<com.edu.erpbackend.model.users.Teacher>> getAllTeachers(
+            @RequestParam(required = false) String department) {
+
+        List<com.edu.erpbackend.model.users.Teacher> teachers;
+
+        if (department != null && !department.isEmpty()) {
+            teachers = teacherRepository.findByDepartment(department);
+        } else {
+            teachers = teacherRepository.findAll();
+        }
+
+        return ResponseEntity.ok(teachers);
+    }
+
+    // ✅ NEW: Delete a student
+    @DeleteMapping("/student/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteStudent(@PathVariable UUID id) {
+        if (!studentRepository.existsById(id)) {
+            return ResponseEntity.badRequest().body("Student not found with ID: " + id);
+        }
+        studentRepository.deleteById(id);
+        return ResponseEntity.ok("Student deleted successfully");
+    }
+
+    // ✅ NEW: Delete a teacher
+    @DeleteMapping("/teacher/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteTeacher(@PathVariable UUID id) {
+        if (!teacherRepository.existsById(id)) {
+            return ResponseEntity.badRequest().body("Teacher not found with ID: " + id);
+        }
+        teacherRepository.deleteById(id);
+        return ResponseEntity.ok("Teacher deleted successfully");
     }
 }

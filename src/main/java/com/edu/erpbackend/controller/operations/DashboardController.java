@@ -11,7 +11,6 @@ import com.edu.erpbackend.repository.academic.NotificationRepository;
 import com.edu.erpbackend.repository.operations.AssignmentRepository;
 import com.edu.erpbackend.repository.operations.SubmissionRepository;
 import com.edu.erpbackend.repository.users.StudentRepository;
-import com.edu.erpbackend.repository.users.TeacherRepository;
 import com.edu.erpbackend.repository.users.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,61 +20,62 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/dashboard/stats")
 @RequiredArgsConstructor
 public class DashboardController {
 
     private final UserRepository userRepository;
-    private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
-    private final NotificationRepository notificationRepository;
-    private final TeacherRepository teacherRepository;
     private final SubmissionRepository submissionRepository;
+    private final NotificationRepository notificationRepository;
+    private final StudentRepository studentRepository;
     private final AssignmentRepository assignmentRepository;
 
-    @GetMapping("/stats")
-    public ResponseEntity<DashboardStats> getStats() {
+    @GetMapping
+    public ResponseEntity<DashboardStats> getDashboard() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 1. Common Stat: Unread Notices
-        long unreadNotices = notificationRepository.countByRecipientIdAndIsReadFalse(user.getId());
+        DashboardStats.DashboardStatsBuilder builder = DashboardStats.builder();
+
+        // ✅ Common: Unread notification count as "active notices"
+        long unread = notificationRepository.countByRecipientIdAndIsReadFalse(user.getId());
+        builder.activeNotices((int) unread);
 
         if (user.getRole() == Role.STUDENT) {
-            Student student = studentRepository.findById(user.getId()).orElseThrow();
 
-            // 2. Student Stat: Attendance %
-            long totalClasses = attendanceRepository.countByStudentId(student.getId());
-            long presentClasses = attendanceRepository.countByStudentIdAndStatus(student.getId(), AttendanceStatus.PRESENT);
-            double percent = totalClasses == 0 ? 0.0 : ((double) presentClasses / totalClasses) * 100;
+            // ✅ Attendance Percentage
+            long total = attendanceRepository.countByStudentId(user.getId());
+            long present = attendanceRepository.countByStudentIdAndStatus(
+                    user.getId(), AttendanceStatus.PRESENT);
+            double pct = total > 0 ? Math.round((present * 100.0 / total) * 10.0) / 10.0 : 0.0;
+            builder.attendancePercentage(pct);
 
-            // 3. Student Stat: Pending Assignments (Total Class Work - My Submissions)
-            long totalAssignments = assignmentRepository.countByBranchAndSemester(student.getBranch(), student.getSemester());
-            long mySubmissions = submissionRepository.countByStudentId(student.getId());
-
-            // Logic: If there are 10 assignments and I did 8, then 2 are pending.
-            // Math.max ensures we don't return negative numbers if data is messy.
-            long pendingAssignments = Math.max(0, totalAssignments - mySubmissions);
-
-            return ResponseEntity.ok(DashboardStats.builder()
-                    .attendancePercentage(percent)
-                    .activeNotices((int) unreadNotices)
-                    .pendingAssignments((int) pendingAssignments) // ✅ Real Data
-                    .build());
+            // ✅ Pending Assignments = total for class - already submitted
+            Student student = studentRepository.findById(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+            long totalAssignments = assignmentRepository
+                    .countByBranchAndSemester(student.getBranch(), student.getSemester());
+            long submitted = submissionRepository.countByStudentId(user.getId());
+            builder.pendingAssignments((int) Math.max(0, totalAssignments - submitted));
 
         } else if (user.getRole() == Role.TEACHER) {
-            Teacher teacher = teacherRepository.findById(user.getId()).orElseThrow();
 
-            // 4. Teacher Stat: Ungraded Submissions
-            long ungraded = submissionRepository.countByAssignment_TeacherIdAndGradeIsNull(teacher.getId());
+            // ✅ Total students in the system
+            builder.totalStudents((int) studentRepository.count());
 
-            return ResponseEntity.ok(DashboardStats.builder()
-                    .totalStudents((int) studentRepository.count())
-                    .activeNotices((int) unreadNotices)
-                    .ungradedAssignments((int) ungraded)
-                    .build());
+            // ✅ Ungraded submissions for THIS teacher's assignments
+            long ungraded = submissionRepository
+                    .countByAssignment_TeacherIdAndGradeIsNull(user.getId());
+            builder.ungradedAssignments((int) ungraded);
+
+        } else if (user.getRole() == Role.ADMIN) {
+
+            // ✅ Admin sees total students
+            builder.totalStudents((int) studentRepository.count());
         }
 
-        return ResponseEntity.ok(DashboardStats.builder().build());
+        return ResponseEntity.ok(builder.build());
     }
 }
