@@ -9,7 +9,7 @@ import java.util.UUID;
 public class AttendanceRequest {
     private UUID subjectId;
     private LocalDate date;
-    private Integer semester;
+//    private Integer semester;
 
     // We will send a list of Student IDs who are PRESENT.
     // Anyone NOT in this list for this class will be marked ABSENT automatically.
