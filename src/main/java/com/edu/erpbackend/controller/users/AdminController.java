@@ -15,6 +15,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.edu.erpbackend.model.academic.Subject;
 import com.edu.erpbackend.repository.operations.SubjectRepository;
+import com.edu.erpbackend.model.users.Teacher;
+import com.edu.erpbackend.repository.users.TeacherRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -207,5 +209,31 @@ public class AdminController {
         }
         teacherRepository.deleteById(id);
         return ResponseEntity.ok("Teacher deleted successfully");
+    }
+
+    // ✅ Admin: Assign a Teacher to a Subject
+    @PutMapping("/subjects/{subjectId}/assign-teacher/{teacherId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> assignTeacherToSubject(
+            @PathVariable UUID subjectId,
+            @PathVariable UUID teacherId
+    ) {
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new RuntimeException("Subject not found"));
+
+        Teacher teacher = teacherRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+        subject.setTeacher(teacher);
+        Subject saved = subjectRepository.save(subject);
+
+        // ✅ Small response payload (avoid returning full Subject entity)
+        return ResponseEntity.ok(Map.of(
+                "message", "Teacher assigned to subject successfully",
+                "subjectId", saved.getId(),
+                "teacherId", teacher.getId(),
+                "subjectCode", saved.getCode(),
+                "subjectName", saved.getName()
+        ));
     }
 }

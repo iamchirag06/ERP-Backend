@@ -10,6 +10,8 @@ public interface SubjectRepository extends JpaRepository<Subject, UUID> {
     // Find all subjects for a branch (e.g., All CSE subjects)
     List<Subject> findByBranchId(UUID branchId);
 
-    // 🆕 Find subjects for a specific Branch AND Semester (e.g., CSE Sem 3)
+    // Find subjects for a specific Branch AND Semester (e.g., CSE Sem 3)
     List<Subject> findByBranchIdAndSemester(UUID branchId, Integer semester);
+    // Find subjects assigned to a specific teacher
+    List<Subject> findByTeacherId(UUID teacherId);
 }

@@ -5,11 +5,15 @@ import com.edu.erpbackend.dto.AttendanceSummaryResponse;
 import com.edu.erpbackend.model.academic.Subject;
 import com.edu.erpbackend.model.operations.Attendance;
 import com.edu.erpbackend.model.operations.AttendanceStatus;
+import com.edu.erpbackend.model.users.Role;
 import com.edu.erpbackend.model.users.Student;
+import com.edu.erpbackend.model.users.User;
 import com.edu.erpbackend.repository.academic.AttendanceRepository;
 import com.edu.erpbackend.repository.operations.SubjectRepository;
 import com.edu.erpbackend.repository.users.StudentRepository;
+import com.edu.erpbackend.repository.users.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,29 +28,43 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public void markAttendance(AttendanceRequest request) {
+
         Subject subject = subjectRepository.findById(request.getSubjectId())
                 .orElseThrow(() -> new RuntimeException("Subject not found"));
 
-        // ✅ FIX: Guard against duplicate attendance for same date + subject
+        // SECURITY: only assigned teacher (or admin) can mark this subject
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User loggedInUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (loggedInUser.getRole() == Role.TEACHER) {
+            if (subject.getTeacher() == null || subject.getTeacher().getId() == null
+                    || !subject.getTeacher().getId().equals(loggedInUser.getId())) {
+                throw new RuntimeException("Unauthorized: You are not assigned to teach this subject");
+            }
+        }
+
+        // Duplicate attendance guard: same subject + same date
         boolean alreadyMarked = attendanceRepository
                 .existsBySubjectIdAndDate(request.getSubjectId(), request.getDate());
         if (alreadyMarked) {
             throw new RuntimeException("Attendance already marked for this subject on " + request.getDate());
         }
 
-        List<Student> classStudents = studentRepository.findByBranchIdAndSemester(
-                subject.getBranch().getId(),
-                request.getSemester()
-        );
+        // ✅ Derive class roster from subject (semester comes from subject, not request)
+        UUID branchId = subject.getBranch().getId();
+        Integer semester = subject.getSemester();
+
+        List<Student> classStudents = studentRepository.findByBranchIdAndSemester(branchId, semester);
 
         if (classStudents.isEmpty()) {
             throw new RuntimeException("No students found for this Branch and Semester");
         }
 
-        // ✅ FIX: Build list first, then saveAll() — 1 SQL query instead of N
         List<Attendance> attendanceList = new ArrayList<>();
         for (Student student : classStudents) {
             Attendance attendance = new Attendance();
@@ -54,7 +72,8 @@ public class AttendanceService {
             attendance.setSubject(subject);
             attendance.setDate(request.getDate());
 
-            if (request.getPresentStudentIds().contains(student.getId())) {
+            if (request.getPresentStudentIds() != null
+                    && request.getPresentStudentIds().contains(student.getId())) {
                 attendance.setStatus(AttendanceStatus.PRESENT);
             } else {
                 attendance.setStatus(AttendanceStatus.ABSENT);
@@ -62,18 +81,16 @@ public class AttendanceService {
             attendanceList.add(attendance);
         }
 
-        attendanceRepository.saveAll(attendanceList); // ✅ 1 batch insert
+        attendanceRepository.saveAll(attendanceList);
     }
 
     public List<Attendance> getStudentAttendance(UUID studentId) {
         return attendanceRepository.findByStudentId(studentId);
     }
 
-    // ✅ NEW: Attendance summary per subject with percentage
     public List<AttendanceSummaryResponse> getAttendanceSummary(UUID studentId) {
         List<Attendance> all = attendanceRepository.findByStudentId(studentId);
 
-        // Group by subject
         java.util.Map<Subject, List<Attendance>> grouped = new java.util.LinkedHashMap<>();
         for (Attendance a : all) {
             grouped.computeIfAbsent(a.getSubject(), k -> new ArrayList<>()).add(a);
@@ -94,7 +111,7 @@ public class AttendanceService {
                     .subjectCode(subject.getCode())
                     .totalClasses((int) total)
                     .presentClasses((int) present)
-                    .percentage(Math.round(percentage * 10.0) / 10.0) // round to 1 decimal
+                    .percentage(Math.round(percentage * 10.0) / 10.0)
                     .build());
         }
         return summary;
