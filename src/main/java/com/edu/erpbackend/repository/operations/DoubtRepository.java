@@ -13,4 +13,10 @@ public interface DoubtRepository extends JpaRepository<Doubt, UUID> {
 
     // This one looks perfect (assuming you added 'subject' and 'createdAt' to your Model)
     List<Doubt> findBySubjectIdOrderByCreatedAtDesc(UUID subjectId);
+
+    // ✅ Find all doubts for a specific student (asker)
+    List<Doubt> findByAskerIdOrderByCreatedAtDesc(UUID askerId);
+
+    // ✅ Find all doubts across all subjects
+    List<Doubt> findAllByOrderByCreatedAtDesc();
 }
