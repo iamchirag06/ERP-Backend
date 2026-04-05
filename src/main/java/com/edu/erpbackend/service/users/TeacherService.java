@@ -2,14 +2,18 @@ package com.edu.erpbackend.service.users;
 
 import com.edu.erpbackend.dto.TeacherProfileResponse;
 import com.edu.erpbackend.dto.TeacherProfileUpdateRequest;
+import com.edu.erpbackend.model.operations.Branch;
 import com.edu.erpbackend.model.users.Teacher;
 import com.edu.erpbackend.model.users.User;
+import com.edu.erpbackend.repository.academic.BranchRepository;
 import com.edu.erpbackend.repository.users.TeacherRepository;
 import com.edu.erpbackend.repository.users.UserRepository;
 import com.edu.erpbackend.service.common.FileService; // Ensure this imports your Cloudinary logic
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +22,7 @@ public class TeacherService {
     private final TeacherRepository teacherRepository;
     private final UserRepository userRepository;
     private final FileService fileService;
+    private final BranchRepository branchRepository;
 
     // 1. GET PROFILE
     public TeacherProfileResponse getMyProfile(String email) {
@@ -76,5 +81,10 @@ public class TeacherService {
         teacherRepository.save(teacher);
 
         return newUrl;
+    }
+
+    // 4. GET ALL BRANCHES
+    public List<Branch> getAllBranches() {
+        return branchRepository.findAll();
     }
 }

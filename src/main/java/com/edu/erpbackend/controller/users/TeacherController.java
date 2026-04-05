@@ -2,6 +2,7 @@ package com.edu.erpbackend.controller.users;
 
 import com.edu.erpbackend.dto.TeacherProfileResponse;
 import com.edu.erpbackend.dto.TeacherProfileUpdateRequest;
+import com.edu.erpbackend.model.operations.Branch;
 import com.edu.erpbackend.service.users.TeacherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -47,5 +49,12 @@ public class TeacherController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    // 4. GET ALL BRANCHES
+    @GetMapping("/branches")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<Branch>> getAllBranches() {
+        return ResponseEntity.ok(teacherService.getAllBranches());
     }
 }
