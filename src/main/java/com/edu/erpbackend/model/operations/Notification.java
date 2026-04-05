@@ -34,6 +34,12 @@ public class Notification {
     private UUID referenceId;
 
     private UUID batchId;
+    
+    // Track which branch this notification belongs to (null for "ALL" or individual notifications)
+    private UUID branchId;
+    
+    // Store semester if sent to a specific class
+    private Integer semester;
 
     private boolean isRead = false;
 

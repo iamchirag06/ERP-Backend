@@ -1,15 +1,14 @@
 package com.edu.erpbackend.controller.operations;
 
 import com.edu.erpbackend.dto.NoticeRequest;
+import com.edu.erpbackend.dto.NotificationResponse;
 import com.edu.erpbackend.model.operations.Branch;
-import com.edu.erpbackend.model.operations.Notification;
 import com.edu.erpbackend.model.operations.NotificationType;
 import com.edu.erpbackend.model.users.User;
 import com.edu.erpbackend.repository.academic.BranchRepository;
 import com.edu.erpbackend.repository.users.UserRepository;
 import com.edu.erpbackend.service.common.FileService;
 import com.edu.erpbackend.service.operations.NotificationService;
-import com.fasterxml.jackson.databind.ObjectMapper; // ✅ Import 1
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,15 +31,17 @@ public class NotificationController {
     private final BranchRepository branchRepository;
     private final FileService fileService;
 
-    // ✅ Initialize ObjectMapper manually (fixes parsing issues)
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // ✅ Helper method to extract current user ID (DRY principle)
+    private UUID getCurrentUserId() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return user.getId();
+    }
 
     // Get MY Notifications
     @GetMapping
-    public ResponseEntity<List<Notification>> getMyNotifications() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
-        return ResponseEntity.ok(notificationService.getMyNotifications(user.getId()));
+    public ResponseEntity<List<NotificationResponse>> getMyNotifications() {
+        return ResponseEntity.ok(notificationService.getMyNotificationsAsDTO(getCurrentUserId()));
     }
 
     // Mark as Read
@@ -106,21 +107,17 @@ public class NotificationController {
         notificationService.withdrawNotification(batchId);
         return ResponseEntity.ok("Notice withdrawn from all students.");
     }
-    // ✅ NEW: Get unread notification count (for frontend bell badge 🔔)
+     // Get unread notification count (for frontend bell badge 🔔)
     @GetMapping("/unread-count")
     public ResponseEntity<?> getUnreadCount() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
-        long count = notificationService.getUnreadCount(user.getId());
+        long count = notificationService.getUnreadCount(getCurrentUserId());
         return ResponseEntity.ok(Map.of("unreadCount", count));
     }
 
-    // ✅ NEW: Mark ALL notifications as read at once
+    // Mark ALL notifications as read at once
     @PutMapping("/read-all")
     public ResponseEntity<?> markAllRead() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
-        notificationService.markAllAsRead(user.getId());
+        notificationService.markAllAsRead(getCurrentUserId());
         return ResponseEntity.ok("All notifications marked as read");
     }
 }
