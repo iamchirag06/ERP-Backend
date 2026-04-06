@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -55,12 +56,19 @@ public class NotificationController {
     @PostMapping(value = "/send", consumes = {"multipart/form-data"})
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<?> sendNotice(
-            @RequestPart("data") NoticeRequest request, // Ensure DTO has 'batch' field
+            @RequestPart("data") String dataJson, // Accept as String to avoid RN Content-Type issues
             @RequestPart(value = "file", required = false) MultipartFile file
     ) throws IOException {
 
+        // Parse the JSON string manually
+        ObjectMapper mapper = new ObjectMapper();
+        NoticeRequest request = mapper.readValue(dataJson, NoticeRequest.class);
+
         // 1. Upload File (Reusable Logic)
-        String attachmentUrl = fileService.saveFile(file, "Notices");
+        String attachmentUrl = null;
+        if (file != null && !file.isEmpty()) {
+            attachmentUrl = fileService.saveFile(file, "Notices");
+        }
         UUID notificationReferenceId; // Returns the ID of the created notice
 
         // 2. Logic to determine recipients
