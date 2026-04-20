@@ -1,6 +1,6 @@
 # 🎓 ERP-Backend
 
-A robust, production-ready **Educational ERP (Enterprise Resource Planning) Backend** built with **Spring Boot 4.0**, designed for managing all core academic and operational workflows in an educational institution.
+A robust, production-ready **Educational ERP (Enterprise Resource Planning) Backend** built with **Spring Boot 4.0.2**, designed for managing all core academic and operational workflows in an educational institution.
 
 ---
 
