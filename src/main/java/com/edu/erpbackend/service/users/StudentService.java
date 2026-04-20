@@ -6,9 +6,9 @@ import com.edu.erpbackend.model.users.Student;
 import com.edu.erpbackend.model.users.User;
 import com.edu.erpbackend.repository.users.StudentRepository;
 import com.edu.erpbackend.repository.users.UserRepository;
+import com.edu.erpbackend.service.common.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.edu.erpbackend.service.common.FileService;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -17,7 +17,7 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
-    private final FileService fileService; // ✅ Inject this
+    private final FileService fileService;
 
     // 1. GET PROFILE LOGIC
     public StudentProfileResponse getMyProfile(String email) {
@@ -32,7 +32,7 @@ public class StudentService {
                 .email(student.getEmail())
                 .rollNo(student.getRollNo())
                 .profileImageUrl(student.getProfileImageUrl())
-                .branchName(student.getBranch() != null ? student.getBranch().getName() : "Not Assigned") // ✅ Null Safety
+                .branchName(student.getBranch() != null ? student.getBranch().getName() : "Not Assigned")
                 .semester(student.getSemester())
                 .batch(student.getBatch())
                 .cgpa(student.getCgpa())
@@ -82,6 +82,6 @@ public class StudentService {
         student.setProfileImageUrl(newUrl);
         studentRepository.save(student);
 
-        return newUrl; // Return URL so frontend can show it immediately
+        return newUrl;
     }
 }

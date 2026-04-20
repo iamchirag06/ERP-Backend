@@ -108,12 +108,22 @@ public class NotificationController {
         ));
     }
 
-    // Withdraw / Unsend Notice
+    // Delete Notification by ID
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<?> deleteNotification(@PathVariable UUID notificationId) {
+        notificationService.deleteNotification(notificationId);
+        return ResponseEntity.ok("Notification deleted successfully.");
+    }
+
+    // ✅ NEW: Delete Notification from ALL users by batch ID (Admin/Teacher only)
     @DeleteMapping("/batch/{batchId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
-    public ResponseEntity<?> withdrawNotice(@PathVariable UUID batchId) {
-        notificationService.withdrawNotification(batchId);
-        return ResponseEntity.ok("Notice withdrawn from all students.");
+    public ResponseEntity<?> deleteNotificationBatch(@PathVariable UUID batchId) {
+        long deletedCount = notificationService.deleteNotificationBatch(batchId);
+        return ResponseEntity.ok(Map.of(
+            "message", "Notification deleted from all users",
+            "deletedCount", deletedCount
+        ));
     }
      // Get unread notification count (for frontend bell badge 🔔)
     @GetMapping("/unread-count")
@@ -127,5 +137,19 @@ public class NotificationController {
     public ResponseEntity<?> markAllRead() {
         notificationService.markAllAsRead(getCurrentUserId());
         return ResponseEntity.ok("All notifications marked as read");
+    }
+
+    // ✅ NEW: Get all sent notifications (Admin/Teacher only) - to retrieve batchIds
+    @GetMapping("/admin/sent")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<?> getAllSentNotifications() {
+        return ResponseEntity.ok(notificationService.getAllSentNotifications());
+    }
+
+    // ✅ NEW: Get details of a specific batch (Admin/Teacher only)
+    @GetMapping("/admin/batch/{batchId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<?> getBatchDetails(@PathVariable UUID batchId) {
+        return ResponseEntity.ok(notificationService.getBatchDetails(batchId));
     }
 }
