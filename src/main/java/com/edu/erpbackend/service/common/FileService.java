@@ -17,6 +17,11 @@ public class FileService {
 
     // 1. Upload Method (Existing)
     public String saveFile(MultipartFile file, String folderName) {
+        // ✅ FIX: Handle null or empty files gracefully
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
         try {
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                     ObjectUtils.asMap("folder", folderName));

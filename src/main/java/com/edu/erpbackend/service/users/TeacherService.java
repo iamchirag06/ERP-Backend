@@ -8,7 +8,7 @@ import com.edu.erpbackend.model.users.User;
 import com.edu.erpbackend.repository.academic.BranchRepository;
 import com.edu.erpbackend.repository.users.TeacherRepository;
 import com.edu.erpbackend.repository.users.UserRepository;
-import com.edu.erpbackend.service.common.FileService; // Ensure this imports your Cloudinary logic
+import com.edu.erpbackend.service.common.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

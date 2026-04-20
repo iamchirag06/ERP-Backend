@@ -13,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -144,6 +146,28 @@ public class NotificationService {
         notificationRepository.save(n);
     }
 
+    // ✅ NEW: Delete notification by ID
+    @Transactional
+    public void deleteNotification(UUID notificationId) {
+        notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notificationRepository.deleteById(notificationId);
+    }
+
+    // ✅ NEW: Delete all notifications with same batch ID (sent to multiple users)
+    // Returns count of deleted notifications
+    @Transactional
+    public long deleteNotificationBatch(UUID batchId) {
+        List<Notification> notificationsWithBatch = notificationRepository.findByBatchId(batchId);
+        
+        if (notificationsWithBatch.isEmpty()) {
+            throw new RuntimeException("No notifications found with batch ID: " + batchId);
+        }
+        
+        notificationRepository.deleteByBatchId(batchId);
+        return notificationsWithBatch.size();
+    }
+
     @Transactional
     public void withdrawNotification(UUID batchId) {
         notificationRepository.deleteByBatchId(batchId);
@@ -163,5 +187,55 @@ public class NotificationService {
                 .toList();
         unread.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unread);
+    }
+
+    // ✅ NEW: Get all sent notifications (distinct batch IDs with details)
+    public List<LinkedHashMap<String, Object>> getAllSentNotifications() {
+        List<UUID> batchIds = notificationRepository.findAllDistinctBatchIds();
+        
+        return batchIds.stream()
+                .map(batchId -> {
+                    List<Notification> notificationsInBatch = notificationRepository.findByBatchId(batchId);
+                    if (!notificationsInBatch.isEmpty()) {
+                        Notification first = notificationsInBatch.get(0);
+                        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+                        map.put("batchId", batchId.toString());
+                        map.put("title", first.getTitle());
+                        map.put("message", first.getMessage());
+                        map.put("type", first.getType().toString());
+                        map.put("targetGroup", first.getTargetGroup());
+                        map.put("createdAt", first.getCreatedAt().toString());
+                        map.put("recipientCount", notificationsInBatch.size());
+                        return map;
+                    }
+                    return null;
+                })
+                .filter(item -> item != null)
+                .collect(Collectors.toList());
+    }
+
+    // ✅ NEW: Get details of a specific batch
+    public Map<String, Object> getBatchDetails(UUID batchId) {
+        List<Notification> notificationsInBatch = notificationRepository.findByBatchId(batchId);
+        
+        if (notificationsInBatch.isEmpty()) {
+            throw new RuntimeException("Batch not found");
+        }
+        
+        Notification first = notificationsInBatch.get(0);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("batchId", batchId.toString());
+        result.put("title", first.getTitle());
+        result.put("message", first.getMessage());
+        result.put("type", first.getType().toString());
+        result.put("targetGroup", first.getTargetGroup());
+        result.put("branchId", first.getBranchId() != null ? first.getBranchId().toString() : null);
+        result.put("semester", first.getSemester());
+        result.put("createdAt", first.getCreatedAt().toString());
+        result.put("totalRecipients", notificationsInBatch.size());
+        result.put("readCount", notificationsInBatch.stream().filter(Notification::isRead).count());
+        result.put("unreadCount", notificationsInBatch.stream().filter(n -> !n.isRead()).count());
+        result.put("attachmentUrl", first.getAttachmentUrl());
+        return result;
     }
 }

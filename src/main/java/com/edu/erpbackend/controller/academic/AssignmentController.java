@@ -50,8 +50,11 @@ public class AssignmentController {
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // 2. Upload File
-        String fileUrl = fileService.saveFile(file, "Assignments");
+        // 2. Upload File (if provided)
+        String fileUrl = null;
+        if (file != null && !file.isEmpty()) {
+            fileUrl = fileService.saveFile(file, "Assignments");
+        }
 
         // 3. Create Assignment
         Assignment saved = assignmentService.createAssignment(email, request, fileUrl);
