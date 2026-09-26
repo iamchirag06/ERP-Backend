@@ -3,6 +3,8 @@ package com.edu.erpbackend.model.operations;
 import com.edu.erpbackend.model.users.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,9 +21,10 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // The user who RECEIVES the notification
+    // ✅ CASCADE: delete recipient → delete their notifications
     @ManyToOne
     @JoinColumn(name = "recipient_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User recipient;
 
     private String title;
@@ -30,15 +33,9 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    // Optional: ID of the related object (Assignment ID, Doubt ID) so frontend can click it
     private UUID referenceId;
-
     private UUID batchId;
-    
-    // Track which branch this notification belongs to (null for "ALL" or individual notifications)
     private UUID branchId;
-    
-    // Store semester if sent to a specific class
     private Integer semester;
 
     private boolean isRead = false;
