@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

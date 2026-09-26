@@ -15,7 +15,4 @@ public interface TimetableRepository extends JpaRepository<TimetableEntry, UUID>
 
     // 2. For Teachers: "Show me where I have to teach"
     List<TimetableEntry> findByTeacherIdOrderByDayAscStartTimeAsc(UUID teacherId);
-    List<TimetableEntry> findByBranchIdAndSemesterOrderByDayAscStartTimeAsc(
-        UUID branchId, Integer semester
-    );
 }
