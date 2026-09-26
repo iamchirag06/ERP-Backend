@@ -45,4 +45,15 @@ public class TimetableController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/branch/{branchId}/semester/{semester}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'STUDENT')")
+    public ResponseEntity<List<TimetableEntry>> getByBranchAndSemester(
+            @PathVariable UUID branchId,
+            @PathVariable Integer semester
+    ) {
+        return ResponseEntity.ok(
+            timetableService.getEntriesByBranchAndSemester(branchId, semester)
+        );
+    }
 }
