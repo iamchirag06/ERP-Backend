@@ -4,6 +4,9 @@ import com.edu.erpbackend.model.users.Student;
 import com.edu.erpbackend.model.academic.Subject;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -14,22 +17,23 @@ public class Attendance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id; // Matches 'uuid id PK'
+    private UUID id;
 
-    // Who was marked?
+    // ✅ CASCADE: delete student → delete their attendance records
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
-    private Student student; // Matches 'uuid student_id FK'
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Student student;
 
-    // For which class?
+    // ✅ CASCADE: delete subject → delete attendance for that subject
     @ManyToOne
     @JoinColumn(name = "subject_id", nullable = false)
-    private Subject subject; // Matches 'uuid subject_id FK'
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Subject subject;
 
     @Column(nullable = false)
-    private LocalDate date; // Matches 'date date'
+    private LocalDate date;
 
     @Enumerated(EnumType.STRING)
-    private AttendanceStatus status; // Matches 'enum status'
+    private AttendanceStatus status;
 }
-
