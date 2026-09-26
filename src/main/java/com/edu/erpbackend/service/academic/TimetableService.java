@@ -84,4 +84,8 @@ public class TimetableService {
         // 4. Handle Invalid Role
         throw new RuntimeException("Invalid Role for Timetable Access");
     }
+     public List<TimetableEntry> getEntriesByBranchAndSemester(UUID branchId, Integer semester) {
+        return timetableRepository
+            .findByBranchIdAndSemesterOrderByDayAscStartTimeAsc(branchId, semester);
+    }
 }
