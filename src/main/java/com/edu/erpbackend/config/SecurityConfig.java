@@ -52,6 +52,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/scalar/**", "/swagger-ui/**").permitAll()
 
+                        // ✅ Allow OAuth2 login flow
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+
                         // Admin-only
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
@@ -88,7 +91,8 @@ public class SecurityConfig {
                 "http://127.0.0.1:*",
                 "https://*.vercel.app",
                 "https://*.netlify.app",
-                "https://*.onrender.com"
+                "https://*.onrender.com",
+                "https://*.workers.dev"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
